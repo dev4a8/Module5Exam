@@ -63,6 +63,7 @@ var switchMenuToActive = function () {
 // On page load (before images or CSS)
 document.addEventListener("DOMContentLoaded", function (event) {
 
+var responseText;
 // TODO: STEP 0: Look over the code from
 // *** start ***
 // to
@@ -82,10 +83,28 @@ document.addEventListener("DOMContentLoaded", function (event) {
 // On first load, show home view
 showLoading("#main-content");
 $ajaxUtils.sendGetRequest(
+  homeHtmlUrl,
+  function (responseText) {
+    document.querySelector("#main-content")
+      .innerHTML = responseText;
+      console.log("Initial html:\n"+document.querySelector("#main-content").innerHTML);
+  },
+  false);
+
+ $ajaxUtils.sendGetRequest (
   allCategoriesUrl,
-  [...], // ***** <---- TODO: STEP 1: Substitute [...] ******
-  true); // Explicitly setting the flag to get JSON from server processed into an object literal
+  function  (categories) {
+    buildAndShowHomeHTML(categories);
+  },
+  true);
+
 });
+
+// $ajaxUtils.sendGetRequest(
+//   allCategoriesUrl,
+//   [...], // ***** <---- TODO: STEP 1: Substitute [...] ******
+//   true); // Explicitly setting the flag to get JSON from server processed into an object literal
+// });
 // *** finish **
 
 
@@ -93,11 +112,23 @@ $ajaxUtils.sendGetRequest(
 // returned from the server.
 function buildAndShowHomeHTML (categories) {
 
+var target = "randomCategoryShortName";
+var initialHtml = document.querySelector("#main-content").innerHTML;
+var newHtml;
+var randomIdx;
+var shortNameStr;
   // Load home snippet page
   $ajaxUtils.sendGetRequest(
     homeHtmlUrl,
-    function (homeHtml) {
-
+    // function (homeHtml) {
+    function (initialHtml) {
+      randomIdx = chooseRandomCategory(categories);
+      shortNameStr = "'"+randomIdx.short_name+"'";
+      // console.log ("substituting "+target+" with "+shortNameStr+" at "+initialHtml);
+      // console.log("Snippet Before:\n"+initialHtml);
+      newHtml = insertProperty(initialHtml,target,shortNameStr);
+      // console.log("Snippet After:\n"+newHtml);
+      insertHtml("#main-content", newHtml);
       // TODO: STEP 2: Here, call chooseRandomCategory, passing it retrieved 'categories'
       // Pay attention to what type of data that function returns vs what the chosenCategoryShortName
       // variable's name implies it expects.
@@ -150,6 +181,8 @@ dc.loadMenuCategories = function () {
 // Load the menu items view
 // 'categoryShort' is a short_name for a category
 dc.loadMenuItems = function (categoryShort) {
+  console.log("In dc.loadMenuItems. categoryShort = "+categoryShort);
+  console.log("In dc.loadMenuItems. Arg to buildAndShowMenuItemsHTML = "+menuItemsUrl+categoryShort);
   showLoading("#main-content");
   $ajaxUtils.sendGetRequest(
     menuItemsUrl + categoryShort,
@@ -263,6 +296,7 @@ function buildMenuItemsViewHtml(categoryMenuItems,
   for (var i = 0; i < menuItems.length; i++) {
     // Insert menu item values
     var html = menuItemHtml;
+    console.log("in buildMenuItemsViewHtml html = "+html);
     html =
       insertProperty(html, "short_name", menuItems[i].short_name);
     html =
@@ -312,6 +346,8 @@ function buildMenuItemsViewHtml(categoryMenuItems,
 function insertItemPrice(html,
                          pricePropName,
                          priceValue) {
+
+  console.log("Substituting Item Price "+pricePropName+" with "+priceValue+" at "+html);
   // If not specified, replace with empty string
   if (!priceValue) {
     return insertProperty(html, pricePropName, "");
